@@ -13,7 +13,7 @@ import static java.lang.Math.toIntExact;
  * Created by Wolfwood on 11/29/2017.
  */
 
-public class PilotShip {
+public class PilotShip implements Ship {
     private RectF rect;
     private float width;
     private float height;
@@ -30,38 +30,27 @@ public class PilotShip {
         rect = new RectF(x,y,x+width,y+height);
 
     }
-    public void update(long fps){
-        if (fps == 0){
-            Log.d("/0 ERROR!","in update pilot ship");
-        }
-        else {
-            x += dx;
-            y += dy;
-        }
+
+    @Override
+    public void update(){
+        x += dx;
+        y += dy;
         rect.left=x;
         rect.right=x+width;
         rect.top=y;
         rect.bottom=y+height;
     }
+
+    @Override
     public void drawShip(Canvas c, Paint p){
         //draw ship
         p.setColor(Color.argb(255,230,15,180));
         c.drawRect(rect,p);
     }
+
+    @Override
     public void setVelocity(float _dx,float _dy){
         dx=_dx;
         dy=_dy;
-    }
-    public float left(){
-        return rect.left;
-    }
-    public float right(){
-        return rect.right;
-    }
-    public float top(){
-        return rect.top;
-    }
-    public float bottom(){
-        return rect.bottom;
     }
 }

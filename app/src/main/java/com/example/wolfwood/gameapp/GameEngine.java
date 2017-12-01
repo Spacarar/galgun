@@ -31,8 +31,8 @@ public class GameEngine extends SurfaceView implements Runnable {
     //sounds
     private SoundPool soundPool;
     private MediaPlayer mediaPlayer;
-    private int menuMusic =-1;
-    private int music_1 = -1;
+    private int openingSound =-1;
+   // private int music_1 = -1;
 
     //FIXME MORE SOUNDS HERE
 
@@ -51,7 +51,6 @@ public class GameEngine extends SurfaceView implements Runnable {
     private RectF rightArrowRect;
     private RectF pauseButtonRect;
     private RectF resumeRect;
-    private RectF quitRect;
 
     //fps control
     private long nextFrameTime;
@@ -91,7 +90,6 @@ public class GameEngine extends SurfaceView implements Runnable {
         rightArrowRect = new RectF((float)(screenX*.8),(float)(screenY*.7),screenX,screenY);
         pauseButtonRect =  new RectF((float)(screenX*.8),0,screenX,(float)(screenY*.3));
         resumeRect = new RectF(0,0,screenX,(float)(screenY*.6));
-        quitRect =  new RectF(0,(float)(screenY*.6)+1,0,0);
 
         //Media player is used for background music (large sounds)
         mediaPlayer=mediaPlayer.create(myContext,R.raw.menumusic);
@@ -104,6 +102,8 @@ public class GameEngine extends SurfaceView implements Runnable {
             AssetManager assetManager = context.getAssets();
             AssetFileDescriptor descriptor;
             //add sound using
+            descriptor = assetManager.openFd("opening.ogg");
+            openingSound = soundPool.load(descriptor,0);
             //descriptor = assetManager.openFd("get_mouse_sound.ogg");
             //eat_bob = soundPool.load(descriptor, 0);
         } catch (Exception ex) {
@@ -161,9 +161,10 @@ public class GameEngine extends SurfaceView implements Runnable {
         nextFrameTime=System.currentTimeMillis();
     }
 
+    // Are we due to update the frame
     private boolean updateRequired() {
-        // Are we due to update the frame
-        if(gamestate==GAMESTATE.MAINMENU){
+        //why not lower the framerate in the menus
+        if(gamestate==GAMESTATE.MAINMENU||gamestate==GAMESTATE.PAUSED){
             if(nextFrameTime<=System.currentTimeMillis()){
                 nextFrameTime=System.currentTimeMillis()+MILLIS_PER_SECOND/3;
                 return true;
@@ -188,7 +189,7 @@ public class GameEngine extends SurfaceView implements Runnable {
             case MAINMENU:
                 break;
             case PLAYING:
-                pilot.update(FPS);
+                pilot.update();
                 break;
             case PAUSED:
                 break;
@@ -316,6 +317,7 @@ public class GameEngine extends SurfaceView implements Runnable {
                 gamestate = GAMESTATE.PLAYING;
                 stopMusic();
                 mediaPlayer = mediaPlayer.create(myContext, R.raw.music1);
+                soundPool.play(openingSound,1,1,0,0,1);
                 newGame();
                 return true;
             case MotionEvent.ACTION_UP:
@@ -339,6 +341,7 @@ public class GameEngine extends SurfaceView implements Runnable {
                     gamestate=GAMESTATE.PAUSED;
                     stopMusic();
                     mediaPlayer = mediaPlayer.create(myContext,R.raw.menumusic);
+                    mediaPlayer.start();
                     //pause game
                 }
                 else {
@@ -358,6 +361,7 @@ public class GameEngine extends SurfaceView implements Runnable {
                     gamestate = GAMESTATE.PLAYING;
                     stopMusic();
                     mediaPlayer = mediaPlayer.create(myContext, R.raw.music1);
+                    mediaPlayer.start();
                     return true;
                 }
                 else{
