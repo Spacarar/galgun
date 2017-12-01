@@ -1,4 +1,5 @@
-# galgun
+# galagun
+(Galaxy Gunner)
 Advanced programming java final project
 
 Source code for the project can be found here
