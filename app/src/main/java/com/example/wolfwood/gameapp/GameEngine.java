@@ -9,12 +9,14 @@ import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.RectF;
 import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.media.SoundPool;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import java.io.IOException;
 import java.util.Random;
 
 /**
@@ -25,10 +27,11 @@ public class GameEngine extends SurfaceView implements Runnable {
     //main game loop thread
     private Thread thread = null;
     //context
-    private Context context;
 
     //sounds
     private SoundPool soundPool;
+    private MediaPlayer mediaPlayer;
+    private int menuMusic =-1;
     private int music_1 = -1;
 
     //FIXME MORE SOUNDS HERE
@@ -36,6 +39,7 @@ public class GameEngine extends SurfaceView implements Runnable {
     //screen size
     private int screenX;
     private int screenY;
+    private Context myContext;
 
     //player information
     private int lives;
@@ -46,6 +50,8 @@ public class GameEngine extends SurfaceView implements Runnable {
     private RectF leftArrowRect;
     private RectF rightArrowRect;
     private RectF pauseButtonRect;
+    private RectF resumeRect;
+    private RectF quitRect;
 
     //fps control
     private long nextFrameTime;
@@ -73,20 +79,31 @@ public class GameEngine extends SurfaceView implements Runnable {
 
     public GameEngine(Context context, Point size) {
         super(context);
-        context = context;
+        myContext=context;
         screenX = size.x;
         screenY = size.y;
         lives = 3;
         score = 0;
         gamestate=GAMESTATE.MAINMENU;
-        //FIXE ME ADD SOUNDS
+
+        //prepare the touch areas
+        leftArrowRect = new RectF(0,(float)(screenY*.7),(float)(screenX*.2),screenY);
+        rightArrowRect = new RectF((float)(screenX*.8),(float)(screenY*.7),screenX,screenY);
+        pauseButtonRect =  new RectF((float)(screenX*.8),0,screenX,(float)(screenY*.3));
+        resumeRect = new RectF(0,0,screenX,(float)(screenY*.6));
+        quitRect =  new RectF(0,(float)(screenY*.6)+1,0,0);
+
+        //Media player is used for background music (large sounds)
+        mediaPlayer=mediaPlayer.create(myContext,R.raw.menumusic);
+        mediaPlayer.setLooping(true);
+
+        //FIXME add sound effects
+        //soundpool is for small sounds & effects
         soundPool = new SoundPool(10, AudioManager.STREAM_MUSIC, 1);
         try {
             AssetManager assetManager = context.getAssets();
             AssetFileDescriptor descriptor;
             //add sound using
-            descriptor = assetManager.openFd("music1.mp3");
-            music_1 = soundPool.load(descriptor, 0);
             //descriptor = assetManager.openFd("get_mouse_sound.ogg");
             //eat_bob = soundPool.load(descriptor, 0);
         } catch (Exception ex) {
@@ -95,30 +112,39 @@ public class GameEngine extends SurfaceView implements Runnable {
 
         surfaceHolder = getHolder();
         paint = new Paint();
+
         currentLevel = 1;
         pilot = new PilotShip(screenX, screenY);
         //enemies[][]
         //projectiles[]
         starRandomizer = new Random();
         starRandomizer.setSeed(System.currentTimeMillis());
-        //When things are ready start game!
+
+
+        //this is called when a sound from soundpool completes loading
         soundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener(){
             @Override
             public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
                 switch (sampleId) {
                     case 1:
-                        Log.d("SoundPool 1","sound is ready, launching");
-                        newGame();
+                        Log.d("SoundPool 1","Sound is ready...");
+                        break;
+                    case 2:
+                        Log.d("SoundPool 2","sound is ready, launching");
+                        //soundPool.play(menuMusic,1,1,0,-1,1);
                         break;
                 }
             }
         });
+
+        //start the game
+        newGame();
     }
 
     @Override
     public void run() {
-        if (currentLevel == 1) soundPool.play(music_1, 1, 1, 0, -1, 1);
         while (isPlaying) {
+            //controls fps
             if (updateRequired()) {
                 update();
                 drawThings();
@@ -128,10 +154,10 @@ public class GameEngine extends SurfaceView implements Runnable {
        // soundPool.release();
     }
     public void newGame(){
+        resumeMusic();
         currentLevel=1;
         lives=3;
         score=0;
-        soundPool.play(music_1, 1, 1, 0, -1, 1);
         nextFrameTime=System.currentTimeMillis();
     }
 
@@ -139,7 +165,7 @@ public class GameEngine extends SurfaceView implements Runnable {
         // Are we due to update the frame
         if(gamestate==GAMESTATE.MAINMENU){
             if(nextFrameTime<=System.currentTimeMillis()){
-                nextFrameTime=System.currentTimeMillis()+MILLIS_PER_SECOND/5;
+                nextFrameTime=System.currentTimeMillis()+MILLIS_PER_SECOND/3;
                 return true;
             }
         }
@@ -162,7 +188,6 @@ public class GameEngine extends SurfaceView implements Runnable {
             case MAINMENU:
                 break;
             case PLAYING:
-                pilot.setVelocity(10, 0);
                 pilot.update(FPS);
                 break;
             case PAUSED:
@@ -177,11 +202,13 @@ public class GameEngine extends SurfaceView implements Runnable {
     private void drawThings() {
         //draw things!
         if (surfaceHolder.getSurface().isValid()) {
+            //grab the canvas
             canvas = surfaceHolder.lockCanvas();
-            canvas.drawColor(Color.argb(255, 26, 126, 228));
+            //color base black
+            canvas.drawColor(Color.argb(255, 20, 20, 20));
+            //draw based on whats going on
             switch (gamestate) {
                 case MAINMENU:
-                    canvas.drawColor(Color.argb(255,20,20,30));
                     drawStars(paint,canvas);
                     paint.setTextSize(200);
                     paint.setColor(Color.argb(255,240,200,240));
@@ -190,9 +217,15 @@ public class GameEngine extends SurfaceView implements Runnable {
                     canvas.drawText("tap to play!",screenX/2-100,screenY/2+50,paint);
                     break;
                 case PLAYING:
+                    drawStars(paint,canvas);
                     pilot.drawShip(canvas, paint);
                     break;
                 case PAUSED:
+                    paint.setTextSize(200);
+                    paint.setColor(Color.argb(255,240,200,240));
+                    canvas.drawText("Resume",screenX / 2 - 420,screenY/4,paint);
+                    paint.setTextSize(60);
+                    canvas.drawText("Quit",screenX/2-100,screenY-100,paint);
                     break;
                 case DEAD:
                     break;
@@ -213,6 +246,7 @@ public class GameEngine extends SurfaceView implements Runnable {
             x[i]=starRandomizer.nextInt(screenX);
             y[i]=starRandomizer.nextInt(screenY);
         }
+
         paint.setColor(Color.argb(255,255,255,100));
         for(int i=0;i<numStars;i++){
             canvas.drawCircle(x[i],y[i],radius,paint);
@@ -223,6 +257,7 @@ public class GameEngine extends SurfaceView implements Runnable {
         isPlaying = false;
         try {
             soundPool.autoPause();
+            pauseMusic();
             thread.join();
         } catch (Exception ex) {
             Log.d("Thread Error!", "" + ex);
@@ -234,6 +269,27 @@ public class GameEngine extends SurfaceView implements Runnable {
         thread = new Thread(this);
         thread.start();
         soundPool.autoResume();
+        resumeMusic();
+    }
+
+    public void pauseMusic(){
+        if(mediaPlayer.isPlaying()){
+            mediaPlayer.pause();
+        }
+    }
+    public void resumeMusic(){
+        if(!mediaPlayer.isPlaying()) {
+            mediaPlayer.start();
+        }
+
+    }
+    public void stopMusic(){
+        if(mediaPlayer.isPlaying()){
+            mediaPlayer.stop();
+        }
+        mediaPlayer.reset();
+        mediaPlayer.release();
+        mediaPlayer=null;
     }
 
 
@@ -257,28 +313,62 @@ public class GameEngine extends SurfaceView implements Runnable {
     public boolean HandleMenuEvent(MotionEvent event) {
         switch (event.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN:
-                gamestate=GAMESTATE.PLAYING;
+                gamestate = GAMESTATE.PLAYING;
+                stopMusic();
+                mediaPlayer = mediaPlayer.create(myContext, R.raw.music1);
                 newGame();
-                break;
+                return true;
             case MotionEvent.ACTION_UP:
-                //if from arrows stop player
+                //probably dont do anything        }
+                return true;
         }
         return true;
     }
     public boolean HandleGameplayEvent(MotionEvent event){
         switch (event.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN:
-                //if player touches left arrow
-                //if player touches right arrow
-                //if player touches middle
-                //if player touches pause
+                if(leftArrowRect.contains(event.getRawX(),event.getRawY())){
+                    //move left
+                    pilot.setVelocity(-15,0);
+                }
+                else if(rightArrowRect.contains(event.getRawX(),event.getRawY())) {
+                    //move right
+                    pilot.setVelocity(15,0);
+                }
+                else if(pauseButtonRect.contains(event.getRawX(),event.getRawY())){
+                    gamestate=GAMESTATE.PAUSED;
+                    stopMusic();
+                    mediaPlayer = mediaPlayer.create(myContext,R.raw.menumusic);
+                    //pause game
+                }
+                else {
+                    //shoot
+                }
                 break;
             case MotionEvent.ACTION_UP:
+                pilot.setVelocity(0,0);
                 //if from arrows stop player
         }
         return true;
     }
     public boolean HandlePauseEvent(MotionEvent event){
+        switch (event.getAction() & MotionEvent.ACTION_MASK) {
+            case MotionEvent.ACTION_DOWN:
+                if(resumeRect.contains(event.getRawX(),event.getRawY())) {
+                    gamestate = GAMESTATE.PLAYING;
+                    stopMusic();
+                    mediaPlayer = mediaPlayer.create(myContext, R.raw.music1);
+                    return true;
+                }
+                else{
+                    gamestate=GAMESTATE.MAINMENU;
+
+
+                }
+            case MotionEvent.ACTION_UP:
+                //probably dont do anything        }
+                return true;
+        }
         return true;
     }
     public boolean HandleDeathEvent(MotionEvent event){
