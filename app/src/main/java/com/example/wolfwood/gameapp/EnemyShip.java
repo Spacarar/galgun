@@ -12,6 +12,7 @@ import android.util.Log;
 
 public class EnemyShip implements Ship {
     private boolean isDead;
+    private float lastFired;
     private RectF rect;
     private float width;
     private float height;
@@ -21,12 +22,21 @@ public class EnemyShip implements Ship {
     private float dy;
 
     public EnemyShip(int scrX, int scrY) {
-        width = ((int) (scrX * .10));
-        height = (int) (scrY * .10);
+        width = ((int) (scrX * .2));
+        height = (int) (scrY * .2);
         x = scrX / 2 - width / 2;
-        y = scrY - height * 2;
+        y = height * 2;
         rect = new RectF(x, y, x + width, y + height);
+        lastFired=System.currentTimeMillis();
 
+    }
+    public EnemyShip(int scrX, int scrY,int _x, int _y){
+        width=(int)(scrX*.05);
+        height=(int)(scrY*.05);
+        x=_x;
+        y=_y;
+        rect = new RectF(x,y,x+width,y+height);
+        lastFired=System.currentTimeMillis();
     }
 
     @Override
@@ -52,5 +62,25 @@ public class EnemyShip implements Ship {
     public void setVelocity(float _dx, float _dy) {
         dx = _dx;
         dy = _dy;
+    }
+    public void setPosition(int _x, int _y){
+        x=_x;
+        y=_y;
+    }
+    public float width() {
+        return width;
+    }
+    public float height(){
+        return height;
+    }
+    public void kill(){
+        isDead=true;
+    }
+    public boolean canFire(){
+        if(lastFired+1000<System.currentTimeMillis())return true;
+        return false;
+    }
+    public void shoot(){
+        lastFired=System.currentTimeMillis();
     }
 }

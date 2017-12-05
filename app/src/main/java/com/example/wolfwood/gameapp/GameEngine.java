@@ -23,6 +23,17 @@ import java.util.Random;
  * Created by Wolfwood on 11/29/2017.
  */
 
+//TODO fix text size to be dynamic to screen size
+    //TODO add enemy movements
+    //TODO add enemy firing
+    //TODO add player firing
+    //TODO add hit detection
+    //TODO display score
+    //TODO add gameover
+    //TODO add levels
+    //TODO fix ship design
+
+
 
 public class GameEngine extends SurfaceView implements Runnable {
     //main game loop thread
@@ -74,6 +85,8 @@ public class GameEngine extends SurfaceView implements Runnable {
     //game objects
     private PilotShip pilot;
     private EnemyShip[][] enemies;
+    private long eFallTime;
+    private boolean eMovingLeft;
     //eProj[];
     //pProj[];
 
@@ -117,6 +130,8 @@ public class GameEngine extends SurfaceView implements Runnable {
         currentLevel = 1;
         pilot = new PilotShip(screenX, screenY);
         initEnemyFleet();
+        eFallTime=System.currentTimeMillis();
+        eMovingLeft=false;
         //enemies[][]
         //projectiles[]
         starRandomizer = new Random();
@@ -143,7 +158,15 @@ public class GameEngine extends SurfaceView implements Runnable {
         newGame();
     }
     private void initEnemyFleet(){
-        enemies = new EnemyShip[5][3];
+        enemies = new EnemyShip[3][5];
+        for(int i=0;i<3;i++){
+            for(int j=0;j<5;j++){
+                enemies[i][j]=new EnemyShip(screenX,screenY,(int)(screenX*.1*(j+1)),(int)((screenY*.1*(i+1))));
+            }
+        }
+        //kill off the two corners to give a more triangle fleet feel to the enemy ships
+        enemies[2][0].kill();//bottom left
+        enemies[2][4].kill();//bottom right
     }
 
     @Override
@@ -195,6 +218,7 @@ public class GameEngine extends SurfaceView implements Runnable {
                 break;
             case PLAYING:
                 pilot.update();
+                updateEnemies();
                 break;
             case PAUSED:
                 break;
@@ -205,8 +229,22 @@ public class GameEngine extends SurfaceView implements Runnable {
         //update things
     }
 
+    private void updateEnemies(){
+        for(int i=0;i<3;i++){
+            for(int j=0;j<5;j++){
+                //check projectile hit
+                //if fall?
+                //else
+                    //if moving right
+                    //if moving left
+            }
+        }
+    }
+
     private void drawThings() {
         //draw things!
+        int bigTextSize=(int)(screenX*.18);
+        int smallTextSize=(int)(screenX*.05);
         if (surfaceHolder.getSurface().isValid()) {
             //grab the canvas
             canvas = surfaceHolder.lockCanvas();
@@ -215,26 +253,27 @@ public class GameEngine extends SurfaceView implements Runnable {
             switch (gamestate) {
                 case MAINMENU:
                     drawStars(paint,canvas);
-                    paint.setTextSize(200);
+                    paint.setTextSize(bigTextSize);
                     paint.setColor(Color.argb(255,240,200,240));
-                    canvas.drawText("GalaGun", screenX / 2 - 420, screenY / 2 - 50, paint);
-                    paint.setTextSize(60);
-                    canvas.drawText("tap to play!",screenX/2-100,screenY/2+50,paint);
+                    canvas.drawText("GalaGun", screenX / 2 - bigTextSize*2, screenY / 2 - 50, paint);
+                    paint.setTextSize(smallTextSize);
+                    canvas.drawText("tap to play!",screenX/2-smallTextSize,screenY/2+50,paint);
                     break;
                 case PLAYING:
                     drawStars(paint,canvas);
                     drawPauseButton(paint,canvas);
                     drawLeftArrow(paint,canvas);
                     drawRightArrow(paint,canvas);
+                    drawEnemies(paint,canvas);
                     pilot.drawShip(canvas, paint);
                     break;
                 case PAUSED:
                     drawStars(paint,canvas);
-                    paint.setTextSize(200);
+                    paint.setTextSize(bigTextSize);
                     paint.setColor(Color.argb(255,240,200,240));
-                    canvas.drawText("Resume",screenX / 2 - 420,screenY/4,paint);
-                    paint.setTextSize(60);
-                    canvas.drawText("Quit",screenX/2-100,screenY-100,paint);
+                    canvas.drawText("Resume",screenX / 2 - bigTextSize*2,screenY/4,paint);
+                    paint.setTextSize(smallTextSize);
+                    canvas.drawText("Quit",screenX/2-smallTextSize,screenY-100,paint);
                     break;
                 case DEAD:
                     break;
@@ -243,6 +282,13 @@ public class GameEngine extends SurfaceView implements Runnable {
 
             }
             surfaceHolder.unlockCanvasAndPost(canvas);
+        }
+    }
+    private void drawEnemies(Paint p, Canvas c){
+        for(int i=0;i<3;i++){
+            for(int j=0;j<5;j++){
+                enemies[i][j].drawShip(c,p);
+            }
         }
     }
     private void drawStars(Paint p, Canvas c){
@@ -262,17 +308,17 @@ public class GameEngine extends SurfaceView implements Runnable {
         }
     }
    private void drawPauseButton(Paint p, Canvas c){
-        paint.setTextSize(90);
+        paint.setTextSize((int)(screenX*.05));
         paint.setColor(Color.argb(255,255,255,255));
         canvas.drawText("||",(float)(screenX*.9),(float)(screenY*.1),paint);
    }
    private void drawLeftArrow(Paint p, Canvas c){
-       paint.setTextSize(110);
+       paint.setTextSize((int)(screenX*.1));
        paint.setColor(Color.argb(255,255,255,255));
        canvas.drawText("<<",(float)(screenX*.1),(float)(screenY*.9),paint);
    }
    private void drawRightArrow(Paint p, Canvas c){
-       paint.setTextSize(110);
+       paint.setTextSize((int)(screenX*.1));
        paint.setColor(Color.argb(255,255,255,255));
        canvas.drawText(">>",(float)(screenX*.9),(float)(screenY*.9),paint);
    }
