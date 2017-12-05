@@ -45,6 +45,8 @@ public class GameEngine extends SurfaceView implements Runnable {
     private MediaPlayer mediaPlayer;
     private int openingSound =-1;
    // private int music_1 = -1;
+    private int bigTextSize;
+    private int smallTextSize;
 
     //FIXME MORE SOUNDS HERE
 
@@ -85,6 +87,8 @@ public class GameEngine extends SurfaceView implements Runnable {
     //game objects
     private PilotShip pilot;
     private EnemyShip[][] enemies;
+    private int enemyBottomRow;
+    private float enemyBaseSpeed;
     private long eFallTime;
     private boolean eMovingLeft;
     //eProj[];
@@ -96,6 +100,7 @@ public class GameEngine extends SurfaceView implements Runnable {
         screenX = size.x;
         screenY = size.y;
         lives = 3;
+        enemyBaseSpeed = 8;
         score = 0;
         gamestate=GAMESTATE.MAINMENU;
 
@@ -104,6 +109,10 @@ public class GameEngine extends SurfaceView implements Runnable {
         rightArrowRect = new RectF((float)(screenX*.8),(float)(screenY*.7),screenX,screenY);
         pauseButtonRect =  new RectF((float)(screenX*.8),0,screenX,(float)(screenY*.3));
         resumeRect = new RectF(0,0,screenX,(float)(screenY*.6));
+
+        //prepare text sizes
+        bigTextSize=(int)(screenX*.18);
+        smallTextSize=(int)(screenX*.05);
 
         //Media player is used for background music (large sounds)
         mediaPlayer=mediaPlayer.create(myContext,R.raw.menumusic);
@@ -167,6 +176,7 @@ public class GameEngine extends SurfaceView implements Runnable {
         //kill off the two corners to give a more triangle fleet feel to the enemy ships
         enemies[2][0].kill();//bottom left
         enemies[2][4].kill();//bottom right
+        enemyBottomRow=2;
     }
 
     @Override
@@ -183,6 +193,8 @@ public class GameEngine extends SurfaceView implements Runnable {
     }
     public void newGame(){
         resumeMusic();
+        initEnemyFleet();
+        pilot.setPosition(screenX/2-pilot.width()/2,screenY-pilot.height()*2);
         currentLevel=1;
         lives=3;
         score=0;
@@ -217,8 +229,20 @@ public class GameEngine extends SurfaceView implements Runnable {
             case MAINMENU:
                 break;
             case PLAYING:
-                pilot.update();
-                updateEnemies();
+                if(lives>0) {
+                    if(!allEnemiesDead()) {
+                        pilot.update();
+                        updateEnemies();
+                    }
+                    else{
+                        //FIXME init new enemies
+                        //FIXME change level
+                        //FIXME play sound
+                    }
+                }
+                else{
+                    gamestate=GAMESTATE.DEAD;
+                }
                 break;
             case PAUSED:
                 break;
@@ -228,25 +252,63 @@ public class GameEngine extends SurfaceView implements Runnable {
 
         //update things
     }
-
-    private void updateEnemies(){
+    private boolean allEnemiesDead(){
         for(int i=0;i<3;i++){
             for(int j=0;j<5;j++){
-                //check projectile hit
-                //if fall?
-                //else
-                    //if moving right
-                    //if moving left
+                //if there is one enemy alive, all enemies are not dead
+                if(!enemies[i][j].isDead())return false;
+            }
+        }
+        return true;
+    }
+
+    private void updateEnemies(){
+        //if it reaches an edge, fall and turn around
+        checkFall();
+        for(int i=0;i<3;i++){
+            for(int j=0;j<5;j++){
+                //FIXME check projectile hit
+                if(eFallTime>System.currentTimeMillis()){
+                    enemies[i][j].setVelocity(0,10);
+                }
+                else{
+                    if(eMovingLeft){
+                        //Log.d("enemies moving","left");
+                        enemies[i][j].setVelocity(-enemyBaseSpeed,0);
+                    }
+                    else{
+                       // Log.d("enemies moving","right");
+                        enemies[i][j].setVelocity(enemyBaseSpeed,0);
+                    }
+                }
+                enemies[i][j].update();
             }
         }
     }
-
+    private void checkFall(){
+        if(enemies[2][0].left()<=screenX*.1){
+            //Log.d("ENEMY LEFT BOUND","bounded by left side");
+            for(int i=0;i<3;i++){
+                for(int j=0;j<5;j++){
+                    enemies[i][j].nudgeRight();
+                }
+            }
+            eMovingLeft=false;
+            eFallTime=System.currentTimeMillis()+5;
+        }
+        else if(enemies[2][4].right()>=screenX*.9){
+            //Log.d("ENEMY RIGHT BOUND","bounded by right side");
+            for(int i=0;i<3;i++){
+                for(int j=0;j<5;j++){
+                    enemies[i][j].nudgeLeft();
+                }
+            }
+            eMovingLeft=true;
+            eFallTime=System.currentTimeMillis()+5;
+        }
+    }
     private void drawThings() {
-        //draw things!
-        int bigTextSize=(int)(screenX*.18);
-        int smallTextSize=(int)(screenX*.05);
         if (surfaceHolder.getSurface().isValid()) {
-            //grab the canvas
             canvas = surfaceHolder.lockCanvas();
             canvas.drawColor(Color.argb(255, 20, 20, 20));
             //draw based on whats going on

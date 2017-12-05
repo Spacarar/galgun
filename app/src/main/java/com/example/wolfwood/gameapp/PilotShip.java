@@ -53,5 +53,15 @@ public class PilotShip implements Ship {
         dx=_dx;
         dy=_dy;
     }
+    public void setPosition(float _x, float _y){
+        x=_x;
+        y=_y;
+    }
 
+    public float width(){
+        return width;
+    }
+    public float height(){
+        return height;
+    }
 }

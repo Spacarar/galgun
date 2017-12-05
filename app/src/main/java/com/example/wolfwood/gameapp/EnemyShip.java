@@ -83,4 +83,30 @@ public class EnemyShip implements Ship {
     public void shoot(){
         lastFired=System.currentTimeMillis();
     }
+    public float left(){
+        return x;
+    }
+    public float right(){
+        return x+width;
+    }
+    public boolean wasHit(RectF _rect){
+        return rect.intersects(rect,_rect);
+    }
+    public void nudgeLeft(){
+        x-=1;
+        rect.left = x;
+        rect.right = x + width;
+        rect.top = y;
+        rect.bottom = y + height;
+    }
+    public void nudgeRight(){
+        x+=1;
+        rect.left = x;
+        rect.right = x + width;
+        rect.top = y;
+        rect.bottom = y + height;
+    }
+    public boolean isDead(){
+        return isDead;
+    }
 }
