@@ -12,7 +12,7 @@ import android.util.Log;
 
 public class EnemyShip implements Ship {
     private boolean isDead;
-    private float lastFired;
+    private long lastFired;
     private RectF rect;
     private float width;
     private float height;
@@ -76,6 +76,7 @@ public class EnemyShip implements Ship {
     public void kill(){
         isDead=true;
     }
+    public void revive(){isDead=false;}
     public boolean canFire(){
         if(lastFired+1000<System.currentTimeMillis())return true;
         return false;

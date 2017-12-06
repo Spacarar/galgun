@@ -1,5 +1,7 @@
 package com.example.wolfwood.gameapp;
 
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.RectF;
 
 /**
@@ -22,6 +24,7 @@ public class Projectile {
         height=screenY/50;
         dx=_dx;
         dy=_dy;
+        rect = new RectF();
         rect.left = x;
         rect.right = x + width;
         rect.top = y;
@@ -38,5 +41,8 @@ public class Projectile {
         rect.top = y;
         rect.bottom = y + height;
 
+    }
+    public void draw(Paint p, Canvas c){
+        c.drawRect(rect,p);
     }
 }

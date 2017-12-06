@@ -24,13 +24,9 @@ import java.util.Random;
  */
 
 //TODO fix text size to be dynamic to screen size
-    //TODO add enemy movements
     //TODO add enemy firing
-    //TODO add player firing
     //TODO add hit detection
-    //TODO display score
     //TODO add gameover
-    //TODO add levels
     //TODO fix ship design
 
 
@@ -44,7 +40,6 @@ public class GameEngine extends SurfaceView implements Runnable {
     private SoundPool soundPool;
     private MediaPlayer mediaPlayer;
     private int openingSound =-1;
-   // private int music_1 = -1;
     private int bigTextSize;
     private int smallTextSize;
 
@@ -58,6 +53,7 @@ public class GameEngine extends SurfaceView implements Runnable {
     //player information
     private int lives;
     private int score;
+    private final int basePoints=50;
     private int currentLevel;
 
     //button area's
@@ -91,8 +87,12 @@ public class GameEngine extends SurfaceView implements Runnable {
     private float enemyBaseSpeed;
     private long eFallTime;
     private boolean eMovingLeft;
-    //eProj[];
-    //pProj[];
+    //projectiles thrown by enemies or players
+    private Projectile[] eProj;
+    private int eShotNumber;
+    private Projectile[] pProj;
+    private int pShotNumber;
+
 
     public GameEngine(Context context, Point size) {
         super(context);
@@ -136,13 +136,13 @@ public class GameEngine extends SurfaceView implements Runnable {
         surfaceHolder = getHolder();
         paint = new Paint();
 
-        currentLevel = 1;
+        currentLevel = 2;
         pilot = new PilotShip(screenX, screenY);
         initEnemyFleet();
         eFallTime=System.currentTimeMillis();
         eMovingLeft=false;
         //enemies[][]
-        //projectiles[]
+        initProjectiles();
         starRandomizer = new Random();
         starRandomizer.setSeed(System.currentTimeMillis());
 
@@ -170,7 +170,7 @@ public class GameEngine extends SurfaceView implements Runnable {
         enemies = new EnemyShip[3][5];
         for(int i=0;i<3;i++){
             for(int j=0;j<5;j++){
-                enemies[i][j]=new EnemyShip(screenX,screenY,(int)(screenX*.1*(j+1)),(int)((screenY*.1*(i+1))));
+                enemies[i][j]=new EnemyShip(screenX,screenY,(int)(screenX*.1*(j+1)),(int)(screenY*.1*(i+1)));
             }
         }
         //kill off the two corners to give a more triangle fleet feel to the enemy ships
@@ -178,7 +178,33 @@ public class GameEngine extends SurfaceView implements Runnable {
         enemies[2][4].kill();//bottom right
         enemyBottomRow=2;
     }
-
+    private void resetEnemyFleet(){
+        for(int i=0;i<3;i++){
+            for(int j=0;j<5;j++){
+                enemies[i][j].setPosition((int)(screenX*.1*(j+1)),(int)(screenY*.1*(i+1)));
+                enemies[i][j].revive();
+            }
+        }
+        enemies[2][0].kill();//bottom left
+        enemies[2][4].kill();//bottom right
+        enemyBottomRow=2;
+    }
+    private void initProjectiles(){
+        eProj=new Projectile[15];
+        eShotNumber=0;
+        pProj=new Projectile[15];
+        pShotNumber=0;
+        for(int i=0;i<15;i++){
+            pProj[i]=new Projectile(screenX,screenY,-100,-100,0,0);
+            eProj[i]=new Projectile(screenX,screenY,-100,-100,0,0);
+        }
+    }
+    private void clearProjectiles(){
+        for(int i=0;i<15;i++){
+            pProj[i]=new Projectile(screenX,screenY,-100,-100,0,0);
+            eProj[i]=new Projectile(screenX,screenY,-100,-100,0,0);
+        }
+    }
     @Override
     public void run() {
         while (isPlaying) {
@@ -199,6 +225,14 @@ public class GameEngine extends SurfaceView implements Runnable {
         lives=3;
         score=0;
         nextFrameTime=System.currentTimeMillis();
+    }
+    public void nextLevel(){
+        if(lives<3)lives++;
+        clearProjectiles();
+        resetEnemyFleet();
+        pilot.setPosition(screenX/2-pilot.width()/2,screenY-pilot.height()*2);
+        currentLevel++;
+        score+=100*currentLevel;
     }
 
     // Are we due to update the frame
@@ -233,9 +267,10 @@ public class GameEngine extends SurfaceView implements Runnable {
                     if(!allEnemiesDead()) {
                         pilot.update();
                         updateEnemies();
+                        updateProjectiles();
                     }
                     else{
-                        //FIXME init new enemies
+                        nextLevel();
                         //FIXME change level
                         //FIXME play sound
                     }
@@ -251,6 +286,15 @@ public class GameEngine extends SurfaceView implements Runnable {
         }
 
         //update things
+    }
+    private void checkEnemiesHit(int row, int col){
+                for(int p=0;p<15;p++){
+                    if(enemies[row][col].wasHit(pProj[p].rect())&&!enemies[row][col].isDead()){
+                        pProj[p]=new Projectile(screenX,screenY,-100,-100,0,0);
+                        enemies[row][col].kill();
+                        score+=basePoints*(currentLevel);
+                    }
+        }
     }
     private boolean allEnemiesDead(){
         for(int i=0;i<3;i++){
@@ -268,17 +312,18 @@ public class GameEngine extends SurfaceView implements Runnable {
         for(int i=0;i<3;i++){
             for(int j=0;j<5;j++){
                 //FIXME check projectile hit
+                checkEnemiesHit(i,j);
                 if(eFallTime>System.currentTimeMillis()){
                     enemies[i][j].setVelocity(0,10);
                 }
                 else{
                     if(eMovingLeft){
                         //Log.d("enemies moving","left");
-                        enemies[i][j].setVelocity(-enemyBaseSpeed,0);
+                        enemies[i][j].setVelocity(-enemyBaseSpeed*(float)(1+currentLevel*.5),0);
                     }
                     else{
                        // Log.d("enemies moving","right");
-                        enemies[i][j].setVelocity(enemyBaseSpeed,0);
+                        enemies[i][j].setVelocity(enemyBaseSpeed*(float)(1+currentLevel*.5),0);
                     }
                 }
                 enemies[i][j].update();
@@ -294,7 +339,7 @@ public class GameEngine extends SurfaceView implements Runnable {
                 }
             }
             eMovingLeft=false;
-            eFallTime=System.currentTimeMillis()+5;
+            eFallTime=System.currentTimeMillis()+2;
         }
         else if(enemies[2][4].right()>=screenX*.9){
             //Log.d("ENEMY RIGHT BOUND","bounded by right side");
@@ -304,7 +349,13 @@ public class GameEngine extends SurfaceView implements Runnable {
                 }
             }
             eMovingLeft=true;
-            eFallTime=System.currentTimeMillis()+5;
+            eFallTime=System.currentTimeMillis()+2;
+        }
+    }
+    private void updateProjectiles(){
+        for(int i=0;i<15;i++){
+            eProj[i].update();
+            pProj[i].update();
         }
     }
     private void drawThings() {
@@ -326,6 +377,9 @@ public class GameEngine extends SurfaceView implements Runnable {
                     drawPauseButton(paint,canvas);
                     drawLeftArrow(paint,canvas);
                     drawRightArrow(paint,canvas);
+                    drawScore(paint,canvas);
+                    drawLives(paint,canvas);
+                    drawProjectiles(paint,canvas);
                     drawEnemies(paint,canvas);
                     pilot.drawShip(canvas, paint);
                     break;
@@ -369,6 +423,18 @@ public class GameEngine extends SurfaceView implements Runnable {
             canvas.drawCircle(x[i],y[i],radius,paint);
         }
     }
+    private void drawScore(Paint p,Canvas c){
+        p.setTextSize(smallTextSize);
+        paint.setColor(Color.argb(255,200,200,200));
+        canvas.drawText("Score: "+score,(float)(screenX*.05),(float)(screenY*.08),paint);
+    }
+    private void drawLives(Paint p,Canvas c){
+        p.setTextSize(smallTextSize);
+        paint.setColor(Color.argb(255,200,200,200));
+        canvas.drawText("lives: "+lives,(float)(screenX*.05),(float)(screenY*.75),paint);
+
+    }
+
    private void drawPauseButton(Paint p, Canvas c){
         paint.setTextSize((int)(screenX*.05));
         paint.setColor(Color.argb(255,255,255,255));
@@ -382,7 +448,15 @@ public class GameEngine extends SurfaceView implements Runnable {
    private void drawRightArrow(Paint p, Canvas c){
        paint.setTextSize((int)(screenX*.1));
        paint.setColor(Color.argb(255,255,255,255));
-       canvas.drawText(">>",(float)(screenX*.9),(float)(screenY*.9),paint);
+       canvas.drawText(">>",(float)(screenX*.85),(float)(screenY*.9),paint);
+   }
+   private void drawProjectiles(Paint p, Canvas c){
+       for(int i=0;i<15;i++){
+           paint.setColor(Color.argb(255,255,100,100));
+           eProj[i].draw(p,c);
+           paint.setColor(Color.argb(255,100,255,100));
+           pProj[i].draw(p,c);
+       }
    }
 
     public void pause() {
@@ -390,6 +464,7 @@ public class GameEngine extends SurfaceView implements Runnable {
         try {
             soundPool.autoPause();
             pauseMusic();
+            gamestate=GAMESTATE.PAUSED;
             thread.join();
         } catch (Exception ex) {
             Log.d("Thread Error!", "" + ex);
@@ -478,6 +553,13 @@ public class GameEngine extends SurfaceView implements Runnable {
                     //pause game
                 }
                 else {
+                    if(pilot.canFire()){
+                        //Log.d("SHOTS FIRED", "a shot should be fired here ");
+                        pilot.shoot();
+                        if(pShotNumber>=15)pShotNumber%=15;
+                        pProj[pShotNumber]=new Projectile(screenX,screenY,pilot.middleX(),pilot.topY(),0,-30);
+                        pShotNumber++;
+                    }
                     //shoot
                 }
                 break;

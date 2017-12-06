@@ -15,6 +15,7 @@ import static java.lang.Math.toIntExact;
 
 public class PilotShip implements Ship {
     private RectF rect;
+    private long lastFired;
     private float width;
     private float height;
     private float x;
@@ -28,6 +29,7 @@ public class PilotShip implements Ship {
         x=scrX/2-width/2;
         y=scrY-height*2;
         rect = new RectF(x,y,x+width,y+height);
+        lastFired=0;
 
     }
 
@@ -63,5 +65,22 @@ public class PilotShip implements Ship {
     }
     public float height(){
         return height;
+    }
+    public void shoot(){
+        //Log.d("SHOOT", "shoot: was called");
+        lastFired=System.currentTimeMillis()+500;
+    }
+    public boolean canFire(){
+        if(System.currentTimeMillis()>=lastFired) {
+           //Log.d("canFire is true", "current"+System.currentTimeMillis()+" vs estimated: "+lastFired);
+            return true;
+        }
+        return false;
+    }
+    public float middleX(){
+        return x+width/2;
+    }
+    public float topY(){
+        return y;
     }
 }
