@@ -14,7 +14,15 @@ import static java.lang.Math.toIntExact;
  */
 
 public class PilotShip implements Ship {
+    //ships simplified space
     private RectF rect;
+
+    //ships cut out detail from simplified space
+    private RectF leftWing;
+    private RectF shipBody;
+    private RectF cockpit;
+    private RectF rightWing;
+
     private long lastFired;
     private float width;
     private float height;
@@ -29,6 +37,10 @@ public class PilotShip implements Ship {
         x=scrX/2-width/2;
         y=scrY-height*2;
         rect = new RectF(x,y,x+width,y+height);
+        leftWing = new RectF(x,(float)(y+height*.3),(float)(x+width*.3),y+height);
+        shipBody = new RectF((float)(x+width*.3),y,(float)(x+width*.7),(float)(y+height*.8));
+        cockpit = new RectF((float)(x+width*.45),y,(float)(x+width*.55),(float)(y+height*.3));
+        rightWing = new RectF((float)(x+width*.7),(float)(y+height*.3),(float)(x+width),y+height);
         lastFired=0;
 
     }
@@ -37,17 +49,23 @@ public class PilotShip implements Ship {
     public void update(){
         x += dx;
         y += dy;
-        rect.left=x;
-        rect.right=x+width;
-        rect.top=y;
-        rect.bottom=y+height;
+        rect.set(x,y,x+width,y+height);
+        leftWing.set(x,(float)(y+height*.3),(float)(x+width*.3),y+height);
+        shipBody.set((float)(x+width*.3),y,(float)(x+width*.7),(float)(y+height*.7));
+        cockpit.set((float)(x+width*.4),y,(float)(x+width*.6),(float)(y+height*.3));
+        rightWing.set((float)(x+width*.7),(float)(y+height*.3),(float)(x+width),y+height);
     }
 
     @Override
     public void drawShip(Canvas c, Paint p){
         //draw ship
-        p.setColor(Color.argb(255,230,15,180));
-        c.drawRect(rect,p);
+        p.setColor(Color.argb(255,220,220,120));
+        c.drawRect(leftWing,p);
+        c.drawRect(shipBody,p);
+        c.drawRect(rightWing,p);
+        p.setColor(Color.argb(255,100,100,100));
+        c.drawRect(cockpit,p);
+
     }
 
     @Override
@@ -68,7 +86,7 @@ public class PilotShip implements Ship {
     }
     public void shoot(){
         //Log.d("SHOOT", "shoot: was called");
-        lastFired=System.currentTimeMillis()+500;
+        lastFired=System.currentTimeMillis()+300;
     }
     public boolean canFire(){
         if(System.currentTimeMillis()>=lastFired) {
@@ -82,5 +100,8 @@ public class PilotShip implements Ship {
     }
     public float topY(){
         return y;
+    }
+    public RectF rect(){
+        return rect;
     }
 }

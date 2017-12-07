@@ -11,9 +11,17 @@ import android.util.Log;
  */
 
 public class EnemyShip implements Ship {
+    private RectF rect;
+
+    private RectF leftWing;
+    private RectF shipBody;
+    private RectF rightWing;
+    private RectF stripe;
+
     private boolean isDead;
     private long lastFired;
-    private RectF rect;
+
+
     private float width;
     private float height;
     private float x;
@@ -22,20 +30,28 @@ public class EnemyShip implements Ship {
     private float dy;
 
     public EnemyShip(int scrX, int scrY) {
-        width = ((int) (scrX * .2));
-        height = (int) (scrY * .2);
+        width = ((int) (scrX * .17));
+        height = (int) (scrY * .25);
         x = scrX / 2 - width / 2;
         y = height * 2;
         rect = new RectF(x, y, x + width, y + height);
+        leftWing = new RectF(x,y,(float)(x+width*.3),(float)(y+height*.7));
+        shipBody = new RectF((float)(x+width*.3),(float)(y+height*.3),(float)(x+width*.7),y+height);
+        rightWing = new RectF((float)(x+width*.7),y,x+width,(float)(y+height*.7));
+        stripe = new RectF((float)(x+width*.45),y,(float)(x+width*.55),y+height);
         lastFired=System.currentTimeMillis();
 
     }
     public EnemyShip(int scrX, int scrY,int _x, int _y){
-        width=(int)(scrX*.05);
-        height=(int)(scrY*.05);
+        width=(int)(scrX*.055);
+        height=(int)(scrY*.07);
         x=_x;
         y=_y;
         rect = new RectF(x,y,x+width,y+height);
+        leftWing = new RectF(x,y,(float)(x+width*.3),(float)(y+height*.7));
+        shipBody = new RectF((float)(x+width*.3),(float)(y+height*.3),(float)(x+width*.7),y+height);
+        rightWing = new RectF((float)(x+width*.7),y,x+width,(float)(y+height*.7));
+        stripe = new RectF((float)(x+width*.45),y,(float)(x+width*.55),y+height);
         lastFired=System.currentTimeMillis();
     }
 
@@ -43,18 +59,26 @@ public class EnemyShip implements Ship {
     public void update() {
         x += dx;
         y += dy;
-        rect.left = x;
-        rect.right = x + width;
-        rect.top = y;
-        rect.bottom = y + height;
+        rect.set(x, y, x + width, y + height);
+        leftWing.set(x,y,(float)(x+width*.3),(float)(y+height*.7));
+        shipBody.set((float)(x+width*.3),(float)(y+height*.3),(float)(x+width*.7),y+height);
+        rightWing.set((float)(x+width*.7),y,x+width,(float)(y+height*.7));
+        stripe.set((float)(x+width*.45),y,(float)(x+width*.55),y+height);
+
     }
 
     @Override
     public void drawShip(Canvas c, Paint p) {
         //draw ship
         if(!isDead) {
-            p.setColor(Color.argb(255, 230, 150, 180));
-            c.drawRect(rect, p);
+            p.setColor(Color.argb(255, 89, 89, 89));
+            c.drawRect(leftWing, p);
+            c.drawRect(shipBody, p);
+            c.drawRect(rightWing, p);
+            p.setColor(Color.argb(255,200,50,50));
+            c.drawRect(stripe,p);
+
+
         }
     }
 
@@ -77,8 +101,8 @@ public class EnemyShip implements Ship {
         isDead=true;
     }
     public void revive(){isDead=false;}
-    public boolean canFire(){
-        if(lastFired+1000<System.currentTimeMillis())return true;
+    public boolean canFire(int level){
+        if(lastFired+5000/level<System.currentTimeMillis())return true;
         return false;
     }
     public void shoot(){
@@ -110,4 +134,7 @@ public class EnemyShip implements Ship {
     public boolean isDead(){
         return isDead;
     }
+    public float middleX(){return x+width/2;}
+
+    public float bottomY(){return rect.bottom;}
 }
