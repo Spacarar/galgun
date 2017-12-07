@@ -73,6 +73,7 @@ public class PilotShip implements Ship {
         dx=_dx;
         dy=_dy;
     }
+    @Override
     public void setPosition(float _x, float _y){
         x=_x;
         y=_y;

@@ -22,8 +22,6 @@ import java.util.Random;
  * Created by Wolfwood on 11/29/2017.
  */
 
-//TODO fix text size to be dynamic to screen size
-    //TODO add enemy firing
 
 
 
@@ -41,6 +39,7 @@ public class GameEngine extends SurfaceView implements Runnable {
     private int hitSound = -1;
     private int pilotHitSound= -1;
 
+    //standardized text sizes
     private int bigTextSize;
     private int smallTextSize;
 
@@ -69,7 +68,6 @@ public class GameEngine extends SurfaceView implements Runnable {
     private volatile boolean isPlaying;
 
     public enum GAMESTATE {MAINMENU, PLAYING, PAUSED, DEAD}
-
     private GAMESTATE gamestate;
 
     //painting manipulation
@@ -77,20 +75,22 @@ public class GameEngine extends SurfaceView implements Runnable {
     private SurfaceHolder surfaceHolder;
     private Paint paint;
     private Random starRandomizer;
-    private float starTimer;
     private String deathReason;
     private long deathTime;
 
 
     //game objects
     private PilotShip pilot;
+    //enemy fleet mechanics require a few extra things
     private EnemyShip[][] enemies;
     private float enemyBaseSpeed;
     private long eFallTime;
     private boolean eMovingLeft;
-    //projectiles thrown by enemies or players
+
+    //enemy projectile and what the current shot on screen is (this keeps memory free)
     private Projectile[] eProj;
     private int eShotNumber;
+    //player projectile and current shot
     private Projectile[] pProj;
     private int pShotNumber;
 
@@ -98,12 +98,13 @@ public class GameEngine extends SurfaceView implements Runnable {
     public GameEngine(Context context, Point size) {
         super(context);
         myContext=context;
+
         screenX = size.x;
         screenY = size.y;
+
         lives = 3;
         enemyBaseSpeed = 8;
         score = 0;
-        starTimer=System.currentTimeMillis();
         gamestate=GAMESTATE.MAINMENU;
 
         //prepare the touch areas
@@ -120,25 +121,27 @@ public class GameEngine extends SurfaceView implements Runnable {
         mediaPlayer=mediaPlayer.create(myContext,R.raw.menumusic);
         mediaPlayer.setLooping(true);
 
-        //FIXME add sound effects
         //soundpool is for small sounds & effects
         soundPool = new SoundPool(10, AudioManager.STREAM_MUSIC, 1);
         try {
             AssetManager assetManager = context.getAssets();
             AssetFileDescriptor descriptor;
-            //add sound using
+
             descriptor = assetManager.openFd("opening.ogg");
             openingSound = soundPool.load(descriptor,0);
+
             descriptor = assetManager.openFd("pilot_shot.wav");
             pilotShot= soundPool.load(descriptor,0);
+
             descriptor= assetManager.openFd("enemy_shot.wav");
             enemyShot = soundPool.load(descriptor,0);
+
             descriptor = assetManager.openFd("hit_sound.wav");
             hitSound=soundPool.load(descriptor,0);
+
             descriptor = assetManager.openFd("pilot_hit.wav");
             pilotHitSound = soundPool.load(descriptor,0);
-            //descriptor = assetManager.openFd("get_mouse_sound.ogg");
-            //eat_bob = soundPool.load(descriptor, 0);
+
         } catch (Exception ex) {
             Log.d("Error!", "" + ex);
         }
@@ -204,6 +207,7 @@ public class GameEngine extends SurfaceView implements Runnable {
         enemies[2][0].kill();//bottom left
         enemies[2][4].kill();//bottom right
     }
+
     private void initProjectiles(){
         eProj=new Projectile[15];
         eShotNumber=0;
@@ -220,6 +224,7 @@ public class GameEngine extends SurfaceView implements Runnable {
             eProj[i]=new Projectile(screenX,screenY,-100,-100,0,0);
         }
     }
+
     @Override
     public void run() {
         while (isPlaying) {
@@ -274,6 +279,7 @@ public class GameEngine extends SurfaceView implements Runnable {
         return false;
     }
 
+    //main update thread
     private void update() {
         switch(gamestate){
             case MAINMENU:
@@ -289,8 +295,6 @@ public class GameEngine extends SurfaceView implements Runnable {
                     }
                     else{
                         nextLevel();
-                        //FIXME change level
-                        //FIXME play sound
                     }
                 }
                 else{
@@ -407,6 +411,22 @@ public class GameEngine extends SurfaceView implements Runnable {
             deathReason="An enemy ran into you";
         }
     }
+    private void checkFleetOffScreen(){
+        //if the enemy at the top row of the screen makes it past the bottom of the screen
+        if(enemies[0][0].bottomY()>screenY){
+            gamestate=GAMESTATE.DEAD;
+            deathTime=System.currentTimeMillis();
+            deathReason="The enemy got away";
+        }
+    }
+
+    //other update functions
+    private void updateProjectiles(){
+        for(int i=0;i<15;i++){
+            eProj[i].update();
+            pProj[i].update();
+        }
+    }
     private void checkEnemyHitPilot(){
         for(int i=0;i<15;i++){
             if(RectF.intersects(pilot.rect(),eProj[i].rect())){
@@ -422,23 +442,8 @@ public class GameEngine extends SurfaceView implements Runnable {
             }
         }
     }
-    private void checkFleetOffScreen(){
-        //if the enemy at the top row of the screen makes it past the bottom of the screen
-        if(enemies[0][0].bottomY()>screenY){
-            gamestate=GAMESTATE.DEAD;
-            deathTime=System.currentTimeMillis();
-            deathReason="The enemy got away";
-        }
-    }
 
-
-    private void updateProjectiles(){
-        for(int i=0;i<15;i++){
-            eProj[i].update();
-            pProj[i].update();
-        }
-    }
-
+    //drawing functions
     private void drawThings() {
         if (surfaceHolder.getSurface().isValid()) {
             canvas = surfaceHolder.lockCanvas();
@@ -493,7 +498,7 @@ public class GameEngine extends SurfaceView implements Runnable {
     }
     private void drawStars(Paint p, Canvas c){
 
-        int radius=4;
+        int radius=3;
         int numStars=30;
         int[] x = new int[numStars];
         int[] y= new int[numStars];
@@ -502,7 +507,7 @@ public class GameEngine extends SurfaceView implements Runnable {
             y[i]=starRandomizer.nextInt(screenY);
         }
 
-        paint.setColor(Color.argb(200,255,255,100));
+        paint.setColor(Color.argb(200,255,255,140));
         for(int i=0;i<numStars;i++){
             canvas.drawCircle(x[i],y[i],radius,paint);
         }
@@ -531,7 +536,6 @@ public class GameEngine extends SurfaceView implements Runnable {
         paint.setColor(Color.argb(255,200,200,200));
         canvas.drawText("Final Score: "+score,(float)(screenX*.30),(float)(screenY*.85),paint);
     }
-
    private void drawPauseButton(Paint p, Canvas c){
         paint.setTextSize((int)(screenX*.05));
         paint.setColor(Color.argb(255,255,255,255));
@@ -576,6 +580,7 @@ public class GameEngine extends SurfaceView implements Runnable {
         resumeMusic();
     }
 
+    //music handling functions
     private void pauseMusic(){
         if(mediaPlayer.isPlaying()){
             mediaPlayer.pause();
@@ -596,7 +601,7 @@ public class GameEngine extends SurfaceView implements Runnable {
         mediaPlayer=null;
     }
 
-
+    //event handling by gamestate
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         switch (gamestate) {

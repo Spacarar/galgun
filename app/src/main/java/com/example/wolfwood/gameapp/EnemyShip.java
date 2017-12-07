@@ -29,19 +29,6 @@ public class EnemyShip implements Ship {
     private float dx;
     private float dy;
 
-    public EnemyShip(int scrX, int scrY) {
-        width = ((int) (scrX * .17));
-        height = (int) (scrY * .25);
-        x = scrX / 2 - width / 2;
-        y = height * 2;
-        rect = new RectF(x, y, x + width, y + height);
-        leftWing = new RectF(x,y,(float)(x+width*.3),(float)(y+height*.7));
-        shipBody = new RectF((float)(x+width*.3),(float)(y+height*.3),(float)(x+width*.7),y+height);
-        rightWing = new RectF((float)(x+width*.7),y,x+width,(float)(y+height*.7));
-        stripe = new RectF((float)(x+width*.45),y,(float)(x+width*.55),y+height);
-        lastFired=System.currentTimeMillis();
-
-    }
     public EnemyShip(int scrX, int scrY,int _x, int _y){
         width=(int)(scrX*.055);
         height=(int)(scrY*.07);
@@ -87,16 +74,12 @@ public class EnemyShip implements Ship {
         dx = _dx;
         dy = _dy;
     }
-    public void setPosition(int _x, int _y){
+    @Override
+    public void setPosition(float _x, float _y){
         x=_x;
         y=_y;
     }
-    public float width() {
-        return width;
-    }
-    public float height(){
-        return height;
-    }
+
     public void kill(){
         isDead=true;
     }
