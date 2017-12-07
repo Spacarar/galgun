@@ -39,6 +39,7 @@ public class GameEngine extends SurfaceView implements Runnable {
     private int pilotShot = -1;
     private int enemyShot = -1;
     private int hitSound = -1;
+    private int pilotHitSound= -1;
 
     private int bigTextSize;
     private int smallTextSize;
@@ -134,6 +135,8 @@ public class GameEngine extends SurfaceView implements Runnable {
             enemyShot = soundPool.load(descriptor,0);
             descriptor = assetManager.openFd("hit_sound.wav");
             hitSound=soundPool.load(descriptor,0);
+            descriptor = assetManager.openFd("pilot_hit.wav");
+            pilotHitSound = soundPool.load(descriptor,0);
             //descriptor = assetManager.openFd("get_mouse_sound.ogg");
             //eat_bob = soundPool.load(descriptor, 0);
         } catch (Exception ex) {
@@ -407,7 +410,7 @@ public class GameEngine extends SurfaceView implements Runnable {
     private void checkEnemyHitPilot(){
         for(int i=0;i<15;i++){
             if(RectF.intersects(pilot.rect(),eProj[i].rect())){
-                soundPool.play(hitSound,1,1,0,0,1);
+                soundPool.play(pilotHitSound,1,1,0,0,1);
                 eProj[i]=new Projectile(screenX,screenY,-100,-100,0,0);
                 lives--;
                 if(lives<=0){
@@ -499,7 +502,7 @@ public class GameEngine extends SurfaceView implements Runnable {
             y[i]=starRandomizer.nextInt(screenY);
         }
 
-        paint.setColor(Color.argb(255,255,255,100));
+        paint.setColor(Color.argb(200,255,255,100));
         for(int i=0;i<numStars;i++){
             canvas.drawCircle(x[i],y[i],radius,paint);
         }
@@ -695,7 +698,8 @@ public class GameEngine extends SurfaceView implements Runnable {
                     stopMusic();
                     mediaPlayer = mediaPlayer.create(myContext, R.raw.menumusic);
                     mediaPlayer.setLooping(true);
-                    soundPool.play(openingSound, 1, 1, 0, 0, 1);
+                    newGame();
+                    //soundPool.play(openingSound, 1, 1, 0, 0, 1);
                 }
             case MotionEvent.ACTION_UP:
                 //probably dont do anything        }
