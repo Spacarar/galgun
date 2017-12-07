@@ -194,6 +194,7 @@ public class GameEngine extends SurfaceView implements Runnable {
         for(int i=0;i<3;i++){
             for(int j=0;j<5;j++){
                 enemies[i][j].setPosition((int)(screenX*.1*(j+1)),(int)(screenY*.1*(i+1)));
+                enemies[i][j].shoot();
                 enemies[i][j].revive();
             }
         }
